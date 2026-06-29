@@ -1,5 +1,5 @@
 # vantasy-G3
-bot-whatsapp G3
+bot-whatsapp Gen3
 # Langkah² install bot dan Module bot
 ```bash
 $ pkg update && pkg upgrade -y

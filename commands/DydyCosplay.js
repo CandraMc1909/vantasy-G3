@@ -4,7 +4,7 @@ const { checkCooldown } = require("../lib/cooldown");
 module.exports = {
   execute: async (sock, from, msg) => {
     const user = msg.key.participant || msg.key.remoteJid;
-    const cd = checkCooldown(user, "DydyCosplay", 2 * 24 * 60 * 60 * 1000);
+    const cd = checkCooldown(user, "DydyCosplay", 60 * 60 * 1000);
     if (!cd.status) {
       return sock.sendMessage(from, {
         text: `⏳ Tunggu ${cd.text} lagi`,

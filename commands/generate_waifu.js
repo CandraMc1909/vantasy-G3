@@ -1,30 +1,79 @@
-const fs = require("fs");
-const path = require("path");
-const { checkCooldown } = require("../lib/cooldown");
+const fs = require("fs")
+const path = require("path")
+const {
+  checkCooldown
+} = require("../lib/cooldown")
 module.exports = {
   execute: async (sock, from, msg) => {
-    const user = msg.key.participant || msg.key.remoteJid;
-    const cd = checkCooldown(user, "waifu", 0 * 50 * 1000);
-    if (!cd.status) {
-      return sock.sendMessage(from, {
-        text: `⏳ Tunggu ${cd.text} lagi`,
-      });
-    }
     try {
-      const database = JSON.parse(
-        fs.readFileSync("./database/data/Waifu.json"),
-      );
-      const keys = Object.keys(database);
-      const randomFile = keys[Math.floor(Math.random() * keys.length)];
-      const data = database[randomFile];
-      const image = path.join("./database/Waifu", randomFile);
-      const caption = `  ${data.genre}\n✦•┈┈┈❖✧𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆✧❖┈┈┈•✦\n☆━━━◇ ❖ WAIFU ❖ ◇━━━☆\n│\n├─✦ Nama :\n│ ${data.nama}\n│\n├─✦ Sumber :\n│ ${data.sumber}\n│\n├─✦ Creator :\n│ ${data.creator}\n│\n├ ${data.url}\n│\n└────────────\n│ ${data.id}\n╰━❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖━╯\n ${data.warning}`;
-      await sock.sendMessage(from, {
-        image: fs.readFileSync(image),
-        caption,
-      });
+      const user =
+        msg.key.participant ||
+        msg.key.remoteJid
+      const cd =
+        checkCooldown(
+          user,
+          "waifu",
+          10 * 1000
+        )
+      if (!cd.status) {
+        return sock.sendMessage(
+          from,
+          {
+            text:
+              `⏳ Tunggu ${cd.text} lagi`
+          },
+          {
+            quoted: msg
+          }
+        )
+      }
+      const database =
+        JSON.parse(
+          fs.readFileSync(
+            "./database/data/Waifu.json"
+          )
+        )
+      const list =
+        Object.keys(database)
+      const randomFile =
+        list[
+        Math.floor(
+          Math.random() * list.length
+        )
+        ]
+      const info =
+        database[randomFile]
+      const imagePath =
+        path.join(
+          "./database/Waifu",
+          randomFile
+        )
+      await sock.sendMessage(
+        from,
+        {
+          image:
+            fs.readFileSync(imagePath),
+          caption: `${info.genre}\n✦•┈❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖┈•✦\n☆━━━◇ ❖ WAIFU ❖ ◇━━━☆\n│\n├─✦ Nama :\n│ ${info.nama}\n│\n├─✦ Sumber :\n│ ${info.sumber}\n│\n├─✦ Creator :\n│ ${info.creator}\n│\n├ ${info.url}\n│\n└────────────\n│ ${info.id}\n╰━❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖━╯\n ${info.warning}`,
+        },
+        {
+          quoted: msg
+        }
+      )
     } catch (err) {
-      console.log("waifu error", err);
+      console.log(
+        "Waifu Error:",
+        err
+      )
+      await sock.sendMessage(
+        from,
+        {
+          text:
+            "❌ Gagal mengambil waifu"
+        },
+        {
+          quoted: msg
+        }
+      )
     }
-  },
-};
+  }
+}

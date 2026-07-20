@@ -30,7 +30,7 @@ module.exports = {
       const database =
         JSON.parse(
           fs.readFileSync(
-            "./database/dataWaifu.json"
+            "./database/data/Waifu.json"
           )
         )
       const list =

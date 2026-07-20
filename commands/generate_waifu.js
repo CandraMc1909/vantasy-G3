@@ -30,7 +30,7 @@ module.exports = {
       const database =
         JSON.parse(
           fs.readFileSync(
-            "./database/data/Waifu.json"
+            "./database/dataWaifu.json"
           )
         )
       const list =
@@ -45,7 +45,7 @@ module.exports = {
         database[randomFile]
       const imagePath =
         path.join(
-          "./database/Waifu",
+          "./database/media/Waifu",
           randomFile
         )
       await sock.sendMessage(

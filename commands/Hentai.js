@@ -45,7 +45,7 @@ module.exports = {
         database[randomFile]
       const imagePath =
         path.join(
-          "./database/Hentai",
+          "./database/media/Hentai",
           randomFile
         )
       await sock.sendMessage(

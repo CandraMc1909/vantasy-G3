@@ -45,7 +45,7 @@ module.exports = {
         database[randomFile]
       const imagePath =
         path.join(
-          "./database/Waifu",
+          "./database/media/Waifu",
           randomFile
         )
       await sock.sendMessage(

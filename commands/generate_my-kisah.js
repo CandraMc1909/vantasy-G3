@@ -53,7 +53,7 @@ module.exports = {
         {
           image:
             fs.readFileSync(imagePath),
-          caption: `${info.genre}\n✦•┈❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖┈•✦\n☆━━━◇ ❖ MY KISAH ❖ ◇━━━☆\n│\n├─✦ Nama :\n│ ${info.nama}\n│\n├─✦ Sumber :\n│ ${info.sumber}\n│\n├─✦ Creator :\n│ ${info.creator}\n│\n├ ${info.url}\n│\n└────────────\n│ ${info.id}\n╰━❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖━╯\n ${info.warning}`,
+          caption: `${info.genre}\n✦•┈❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖┈•✦\n☆━━━◇ ❖ MY KISAH ❖ ◇━━━☆\n│ ${info.nama}\n│ ${info.sumber}\n│ ${info.creator}\n│────────────\n│ ${info.id}\n╰━❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖━╯\n ${info.url}\n\n ${info.warning}`,
         },
         {
           quoted: msg

@@ -13,7 +13,7 @@ module.exports = {
         checkCooldown(
           user,
           "ZELLU_ART",
-          15 * 60 * 1000
+          3 * 60 * 1000
         )
       if (!cd.status) {
         return sock.sendMessage(
@@ -53,7 +53,7 @@ module.exports = {
         {
           image:
             fs.readFileSync(imagePath),
-          caption: `${info.genre}\n✦•┈❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖┈•✦\n☆━━━◇ ❖ ZELLU_ART ❖ ◇━━━☆\n│ ${info.nama}\n│ ${info.sumber}\n│ ${info.creator}\n│────────────\n│ ${info.id}\n╰━❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖━╯\n ${info.url}\n\n ${info.warning}`,
+          caption: `${info.genre}\n✦•┈❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖┈•✦\n☆━━━◇ ❖ ZELLU_ART ❖ ◇━━━☆\n│ ${info.nama}\n│ ${info.sumber}\n│ @${info.creator}\n│────────────\n│ ${info.id}\n╰━❖✧･ﾟ: * 𝕮𝖔𝖑𝖚𝖒𝖇𝖎𝖓𝖆 *:･ﾟ✧❖━╯\n ${info.url}\n\n ${info.warning}`,
         },
         {
           quoted: msg

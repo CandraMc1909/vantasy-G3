@@ -64,7 +64,7 @@ const {
                     }
                 } else if (connection === "open") {
                     console.log(
-                        "Bot Connected ✓"
+                        "VantasySmp Coneted"
                     )
                 }
             })

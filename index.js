@@ -1,196 +1,742 @@
 const {
     default: makeWASocket,
-        useMultiFileAuthState,
-        DisconnectReason,
-        fetchLatestBaileysVersion
-    } = require("@whiskeysockets/baileys")
-    const pino = require("pino")
-    const fs = require("fs")
-    const loadCommands = require("./lib/loader")
-    const {
-        detect
-    } = require("./lib/groupDetector")
-    const commands = loadCommands()
-    const db = fs.existsSync("./database.json")
-    ? JSON.parse(fs.readFileSync("./database.json")): {}
-    const sleep = (ms) =>
-    new Promise(resolve => setTimeout(resolve, ms))
-    async function startBot() {
+    useMultiFileAuthState,
+    DisconnectReason,
+    fetchLatestBaileysVersion
+} = require("@whiskeysockets/baileys")
+
+const pino = require("pino")
+const fs = require("fs")
+const qrcode = require("qrcode-terminal")
+
+const loadCommands =
+    require("./lib/loader")
+
+const {
+    detect
+} = require("./lib/groupDetector")
+
+const {
+    antiLink
+} = require("./lib/antiLink")
+
+// ==================================================
+// TEXT DETECTOR
+// ==================================================
+
+const {
+    detectText
+} = require("./lib/textDetector")
+
+
+// ==================================================
+// LOAD COMMANDS
+// ==================================================
+
+const commands =
+    loadCommands()
+
+console.log(
+    "Commands loaded:",
+    Object.keys(commands)
+)
+
+
+// ==================================================
+// DATABASE
+// ==================================================
+
+const dbPath =
+    "./database.json"
+
+
+function loadDB() {
+
+    if (!fs.existsSync(dbPath)) {
+
+        fs.writeFileSync(
+            dbPath,
+            "{}"
+        )
+
+    }
+
+    try {
+
+        return JSON.parse(
+            fs.readFileSync(
+                dbPath,
+                "utf8"
+            )
+        )
+
+    } catch (err) {
+
+        console.log(
+            "Database error:",
+            err
+        )
+
+        return {}
+
+    }
+
+}
+
+
+let db =
+    loadDB()
+
+
+// ==================================================
+// SLEEP
+// ==================================================
+
+const sleep =
+    ms =>
+        new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    ms
+                )
+        )
+
+
+// ==================================================
+// START BOT
+// ==================================================
+
+async function startBot() {
+
+    try {
+
         const {
             state,
             saveCreds
         } =
-        await useMultiFileAuthState("session")
+            await useMultiFileAuthState(
+                "session"
+            )
+
+
         const {
             version
         } =
-        await fetchLatestBaileysVersion()
-        const sock = makeWASocket( {
-            version,
-            logger: pino( {
-                level: "silent"
-            }),
-            printQRInTerminal: true,
-            auth: state,
-            browser: [
-                "Chrome",
-                "Windows",
-                "10"
-            ]
-        })
+            await fetchLatestBaileysVersion()
+
+
+        const sock =
+            makeWASocket({
+
+                version,
+
+                logger:
+                    pino({
+                        level: "silent"
+                    }),
+
+                printQRInTerminal:
+                    true,
+
+                auth:
+                    state,
+
+                browser: [
+                    "Chrome",
+                    "Windows",
+                    "10"
+                ]
+
+            })
+
+
+        // ==================================================
+        // SAVE SESSION
+        // ==================================================
+
         sock.ev.on(
             "creds.update",
             saveCreds
         )
+
+
+        // ==================================================
+        // CONNECTION
+        // ==================================================
+
         sock.ev.on(
             "connection.update",
-            (update)=> {
+            update => {
+
                 const {
                     connection,
                     lastDisconnect,
                     qr
                 } = update
+
+
+                // ==================================================
+                // QR CODE
+                // ==================================================
+
                 if (qr) {
-                    require("qrcode-terminal")
-                    .generate(qr, {
-                        small: true
-                    })
-                }
-                if (connection === "close") {
-                    const reconnect =
-                    lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
-                    if (reconnect) {
-                        startBot()
-                    }
-                } else if (connection === "open") {
-                    console.log(
-                        "VantasySmp Coneted"
+
+                    qrcode.generate(
+                        qr,
+                        {
+                            small: true
+                        }
                     )
+
                 }
-            })
-        // AUTO REPLY + COMMAND
+
+
+                // ==================================================
+                // CONNECTION CLOSED
+                // ==================================================
+
+                if (
+                    connection ===
+                    "close"
+                ) {
+
+                    const shouldReconnect =
+                        lastDisconnect
+                            ?.error
+                            ?.output
+                            ?.statusCode
+                        !==
+                        DisconnectReason.loggedOut
+
+
+                    if (
+                        shouldReconnect
+                    ) {
+
+                        console.log(
+                            "Connection terputus..."
+                        )
+
+                        console.log(
+                            "Mencoba reconnect..."
+                        )
+
+                        startBot()
+
+                    } else {
+
+                        console.log(
+                            "Session logout."
+                        )
+
+                    }
+
+                }
+
+
+                // ==================================================
+                // CONNECTION OPEN
+                // ==================================================
+
+                else if (
+                    connection ===
+                    "open"
+                ) {
+
+                    console.log(
+                        "VantasySmp Connected ✓"
+                    )
+
+                    console.log(
+                        "AntiLink: AKTIF ✓"
+                    )
+
+                    console.log(
+                        "TextDetector: AKTIF ✓"
+                    )
+
+                }
+
+            }
+        )
+
+
+        // ==================================================
+        // MESSAGE HANDLER
+        // ==================================================
+
         sock.ev.on(
             "messages.upsert",
-            async({
+            async ({
                 messages
-            })=> {
+            }) => {
+
                 try {
+
                     const msg =
-                    messages[0]
-                    if (!msg.message)
+                        messages[0]
+
+
+                    // ==================================================
+                    // TIDAK ADA PESAN
+                    // ==================================================
+
+                    if (
+                        !msg ||
+                        !msg.message
+                    ) {
+
                         return
-                    if (msg.key.fromMe)
-                        return
-                    const from =
-                    msg.key.remoteJid
-                    const text = (
-                        msg.message.conversation ||
-                        msg.message.extendedTextMessage?.text ||
-                        ""
-                    ).trim()
-                    const cmd =
-                    text.toLowerCase()
-                    if (commands[cmd]) {
-                        return commands[cmd]
-                        .execute(
-                            sock,
-                            from,
-                            msg
-                        )
+
                     }
+
+
+                    // ==================================================
+                    // JANGAN PROSES PESAN BOT SENDIRI
+                    // ==================================================
+
+                    if (
+                        msg.key.fromMe
+                    ) {
+
+                        return
+
+                    }
+
+
+                    // ==================================================
+                    // ID CHAT
+                    // ==================================================
+
+                    const from =
+                        msg.key.remoteJid
+
+
+                    if (!from) {
+
+                        return
+
+                    }
+
+
+                    // ==================================================
+                    // AMBIL TEXT
+                    // ==================================================
+
+                    const text =
+                        (
+                            msg.message
+                                ?.conversation ||
+
+                            msg.message
+                                ?.extendedTextMessage
+                                ?.text ||
+
+                            msg.message
+                                ?.imageMessage
+                                ?.caption ||
+
+                            msg.message
+                                ?.videoMessage
+                                ?.caption ||
+
+                            ""
+                        ).trim()
+
+
+                    if (!text) {
+
+                        return
+
+                    }
+
+
+                    const cmd =
+                        text.toLowerCase()
+
+
+                    // ==================================================
+                    // COMMAND
+                    //
+                    // COMMAND DIPROSES DULU
+                    // ==================================================
+
+                    if (
+                        commands[cmd]
+                    ) {
+
+                        try {
+
+                            return await
+                                commands[cmd]
+                                    .execute(
+                                        sock,
+                                        from,
+                                        msg
+                                    )
+
+                        } catch (err) {
+
+                            console.log(
+                                "Command Error:",
+                                err
+                            )
+
+
+                            await sock.sendMessage(
+                                from,
+                                {
+                                    text:
+                                        "❌ Terjadi error saat menjalankan command."
+                                },
+                                {
+                                    quoted: msg
+                                }
+                            )
+
+                        }
+
+                    }
+
+
+                    // ==================================================
+                    // ANTILINK
+                    //
+                    // SELALU AKTIF DI GRUP
+                    // ==================================================
+
+                    if (
+                        from.endsWith("@g.us")
+                    ) {
+
+                        const blocked =
+                            await antiLink(
+                                sock,
+                                msg,
+                                from
+                            )
+
+
+                        if (
+                            blocked
+                        ) {
+
+                            return
+
+                        }
+
+                    }
+
+
+                    // ==================================================
+                    // TEXT DETECTOR
+                    // ==================================================
+                    //
+                    // Mendeteksi:
+                    // - Toxic
+                    // - Spam
+                    // - Iklan / Promosi
+                    //
+                    // Jika terdeteksi:
+                    // - Pesan dihapus
+                    // - Bot mengirim peringatan
+                    // - Pesan tidak diteruskan ke fitur lain
+                    //
+                    // Hanya aktif di grup.
+                    // ==================================================
+
+                    if (
+                        from.endsWith("@g.us")
+                    ) {
+
+                        const textDetected =
+                            await detectText(
+                                sock,
+                                msg,
+                                from
+                            )
+
+
+                        if (
+                            textDetected
+                        ) {
+
+                            console.log(
+                                "[TEXT DETECTOR] Pesan ditangani."
+                            )
+
+                            return
+
+                        }
+
+                    }
+
+
+                    // ==================================================
+                    // AUTO REPLY
+                    // ==================================================
+
+                    db =
+                        loadDB()
+
+
                     if (
                         db.autoReply &&
                         cmd.includes("halo")
                     ) {
+
                         await sock.sendMessage(
                             from,
                             {
                                 text:
-                                "Halo juga 👋"
+                                    "Halo juga 👋"
+                            },
+                            {
+                                quoted: msg
                             }
                         )
+
                     }
-                }catch(err) {
-                    console.log(err)
+
+
+                } catch (err) {
+
+                    console.log(
+                        "Message Error:",
+                        err
+                    )
+
                 }
-            })
-        // WELCOME & GOODBYE SYSTEM
+
+            }
+        )
+
+
+        // ==================================================
+        // WELCOME & GOODBYE
+        // ==================================================
+
         sock.ev.on(
             "group-participants.update",
-            async(update)=> {
+            async update => {
+
                 try {
+
                     const {
                         id,
                         participants,
                         action
                     } = update
-                    await sleep(1500)
+
+
+                    // ==================================================
+                    // TUNGGU METADATA GRUP UPDATE
+                    // ==================================================
+
+                    await sleep(
+                        1500
+                    )
+
+
                     const metadata =
-                    await sock.groupMetadata(id)
+                        await sock.groupMetadata(
+                            id
+                        )
+
+
                     const groupName =
-                    metadata.subject
+                        metadata.subject
+
+
                     const totalMember =
-                    metadata.participants.length
-                    for (const user of participants) {
+                        metadata
+                            .participants
+                            .length
+
+
+                    // ==================================================
+                    // USER
+                    // ==================================================
+
+                    for (
+                        const user
+                        of participants
+                    ) {
+
                         const username =
-                        user.split("@")[0]
+                            user.split("@")[0]
+
+
                         const posisi =
-                        metadata.participants.findIndex(
-                            p=>p.id === user
-                        )+1
-                        if (action === "add") {
+                            metadata
+                                .participants
+                                .findIndex(
+                                    p =>
+                                        p.id ===
+                                        user
+                                ) + 1
+
+
+                        // ==================================================
+                        // WELCOME
+                        // ==================================================
+
+                        if (
+                            action ===
+                            "add"
+                        ) {
+
                             await sock.sendMessage(
                                 id,
                                 {
+
                                     image:
-                                    fs.readFileSync(
-                                        "./media/welcome.jpg"
-                                    ),
+                                        fs.readFileSync(
+                                            "./media/welcome.jpg"
+                                        ),
+
                                     caption:
-                                    ` *˚₊·˚₊· ͟͟͞͞➳❥ *${groupName}*\n*☆═━┈◈ ╰ v26.03.25 ╯ ◈┈━═☆* \n*│* \n*╰ ㊂▸▸ _Welcome New Member*_ ◂◂\n*│* ┊\n*│* ┊▸ ✦ _Nama : @${username}_\n*│* ┊\n*│* ┊▸ ✦ _No Member :${posisi}_\n*│* ┊▸ ✦ _Total Member : ${totalMember} Member_\n*│* ┊\n*│* ┊▸ ✦ _/login => logim whitelist_\n*│* ┊▸ ✦ _/menu => Menu Bot_\n*│* ╰∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙ ∙ ∙ ∙ ∙ \n*│*\n*╰ ㊂ ▸▸ _Google_ ◂◂*\n\n Semoga betah berada di grup ini dan selalu menghargai member yg lain `,
+
+`*˚₊·˚₊· ͟͟͞͞➳❥* *${groupName}*
+
+*☆═━┈◈ ╰ v26.03.25 ╯ ◈┈━═☆*
+
+*│*
+*╰ ㊂▸▸ _Welcome New Member_ ◂◂*
+*│*
+*│* ┊▸ ✦ _Nama : @${username}_
+*│*
+*│* ┊▸ ✦ _No Member : ${posisi}_
+*│* ┊▸ ✦ _Total Member : ${totalMember} Member_
+*│*
+*│* ┊▸ ✦ _/login => login whitelist_
+*│* ┊▸ ✦ _/menu => Menu Bot_
+*│*
+*│* ╰∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙∙ ∙ ∙ ∙ ∙
+*│*
+*╰ ㊂ ▸▸ _Google_ ◂◂*
+
+Semoga betah berada di grup ini dan selalu menghargai member yg lain.`,
+
                                     mentions: [
                                         user
                                     ]
+
                                 }
                             )
+
                         }
-                        if (action === "remove") {
+
+
+                        // ==================================================
+                        // GOODBYE
+                        // ==================================================
+
+                        if (
+                            action ===
+                            "remove"
+                        ) {
+
                             await sock.sendMessage(
                                 id,
                                 {
+
                                     image:
-                                    fs.readFileSync(
-                                        "./media/goodbye.jpg"
-                                    ),
+                                        fs.readFileSync(
+                                            "./media/goodbye.jpg"
+                                        ),
+
                                     caption:
-                                    `╭━━━〔 ${groupName}〕━━━╮\n┃ 👋 Sampai jumpa, @${username}!\n┃\n┃ Terima kasih sudah menjadi\n┃ bagian dari *️${groupName}*.\n┃\n┃ 🌟 Semoga sukses di mana pun.\n┃ 🚪 Pintu ${groupName} selalu terbuka.\n┃\n┃ Selamat tinggal dan jaga diri!\n┃\n┃ Member Ke :${posisi}\n┃ Total Member : ${totalMember}\n┃\n╰━━━━━━━━━━━━━━━━╯`,
+
+`╭━━━〔 ${groupName} 〕━━━╮
+┃ 👋 Sampai jumpa, @${username}!
+┃
+┃ Terima kasih sudah menjadi
+┃ bagian dari *${groupName}*.
+┃
+┃ 🌟 Semoga sukses di mana pun.
+┃ 🚪 Pintu ${groupName} selalu terbuka.
+┃
+┃ Member Ke : ${posisi}
+┃ Total Member : ${totalMember}
+┃
+╰━━━━━━━━━━━━━━━━╯`,
+
                                     mentions: [
                                         user
                                     ]
+
                                 }
                             )
+
                         }
+
                     }
-                }catch(err) {
+
+
+                } catch (err) {
+
                     console.log(
-                        "Welcome error:",
+                        "Welcome Error:",
                         err
                     )
+
                 }
-            })
+
+            }
+        )
+
+
+        // ==================================================
         // GROUP UPDATE
+        // ==================================================
+
         sock.ev.on(
             "groups.update",
-            async([event])=> {
+            async ([event]) => {
+
                 try {
+
                     await detect(
                         sock,
                         event,
                         db
                     )
-                }catch(err) {
-                    console.log(err)
+
+                } catch (err) {
+
+                    console.log(
+                        "Group Update Error:",
+                        err
+                    )
+
                 }
-            })
+
+            }
+        )
+
+
+    } catch (err) {
+
+        console.log(
+            "Start Bot Error:",
+            err
+        )
+
+
+        setTimeout(
+            () => startBot(),
+            5000
+        )
+
     }
-    startBot()
+
+}
+
+
+// ==================================================
+// START
+// ==================================================
+
+startBot()
